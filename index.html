@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logic balls</title>
+    <script src="js/pixi.min.js"></script>
+</head>
+
+<body>
+    <script>
+        const app = new PIXI.Application({ resizeTo: window, backgroundColor: 0xAAAAAA });
+        document.body.appendChild(app.view);
+
+        // Container for the balls
+        const ballContainer = new PIXI.Container();
+        ballContainer.position.set(app.screen.width / 2, 225);
+        const containerWidth = 500;
+        const containerHeight = 400;
+        const containerBorderThickness = 5;
+        const containerBorderColor = 0xffffff;
+        // Draw border for the container
+        const containerBorder = new PIXI.Graphics();
+        containerBorder.lineStyle(containerBorderThickness, containerBorderColor);
+        containerBorder.drawRect(-containerWidth / 2, -containerHeight / 2, containerWidth, containerHeight);
+        ballContainer.addChild(containerBorder);
+        // Add the container to the stage
+        app.stage.addChild(ballContainer);
+
+        //Container number 2
+        const ballContainer2 = new PIXI.Container();
+        ballContainer2.position.set(app.screen.width / 2, 700); // Adjust the position as needed
+        // Draw border for the second container
+        const containerBorder2 = new PIXI.Graphics();
+        containerBorder2.lineStyle(containerBorderThickness, containerBorderColor);
+        containerBorder2.drawRect(-containerWidth / 2, -containerHeight / 2, containerWidth, containerHeight);
+        ballContainer2.addChild(containerBorder2);
+        // Add the second container to the stage
+        app.stage.addChild(ballContainer2);
+
+        // Draw five different balls
+        const ballColors = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff];
+        const ballPositions = shuffle([
+            { x: -175, y: 125 },
+            { x: -175, y: 25 },
+            { x: -175, y: -75 },
+            { x: 0, y: 125 },
+            { x: 175, y: 125 }
+        ]);
+        const ballRadius = 50;
+
+        for (let i = 0; i < 5; i++) {
+            const ball = new PIXI.Graphics();
+            ball.beginFill(ballColors[i]);
+            ball.drawCircle(0, 0, ballRadius);
+            ball.endFill();
+            ball.x = ballPositions[i].x;
+            ball.y = ballPositions[i].y;
+            ballContainer.addChild(ball);
+        }
+
+        // Draw five different balls for the second container
+        const ballColors2 = [0xff0000, 0x00ff00, 0x0000ff, 0xffff00, 0xff00ff]; // You can define different colors for the second set of balls
+        const ballPositions2 = [
+            { x: -175, y: 125 },
+            { x: -175, y: 25 },
+            { x: -175, y: -75 },
+            { x: 0, y: 125 },
+            { x: 175, y: 125 }
+        ];
+
+        const balls2 = []; // Store references to the balls for drag handling
+
+        for (let i = 0; i < 5; i++) {
+            const ball = new PIXI.Graphics();
+            ball.beginFill(ballColors2[i]);
+            ball.drawCircle(0, 0, ballRadius);
+            ball.endFill();
+            ball.x = ballPositions2[i].x;
+            ball.y = ballPositions2[i].y;
+            ball.interactive = true; // Enable interactivity
+            ball.buttonMode = true; // Show cursor as pointer when hovering
+            ball.draggable = true; // Make the ball draggable
+            balls2.push(ball); // Add the ball to the array
+            ballContainer2.addChild(ball);
+
+            // Attach event listeners only to the original balls
+            if (i < 5) {
+                ball.on('mousedown', onDragStart)
+                    .on('touchstart', onDragStart)
+                    .on('mousemove', onDragMove)
+                    .on('touchmove', onDragMove)
+                    .on('mouseup', onDragEnd)
+                    .on('mouseupoutside', onDragEnd)
+                    .on('touchend', onDragEnd)
+                    .on('touchendoutside', onDragEnd);
+            }
+        }
+
+        function onDragStart(event) {
+            this.data = event.data;
+            this.alpha = 0.5;
+            this.dragging = true;
+
+            // Stop the event propagation to prevent the default PIXI interaction behavior
+            event.stopPropagation();
+        }
+
+
+        function onDragEnd() {
+            this.alpha = 1;
+            this.dragging = false;
+            this.data = null;
+        }
+
+        function onDragMove() {
+            if (this.dragging) {
+                const newPosition = this.data.getLocalPosition(this.parent);
+
+                this.x = newPosition.x;
+                this.y = newPosition.y;
+
+                // Proverka za sudir so drugi topcinja
+                for (const otherBall of balls2) {
+                    if (otherBall !== this) {
+                        const distance = Math.sqrt((this.x - otherBall.x) ** 2 + (this.y - otherBall.y) ** 2);
+
+                        if (distance < 2 * ballRadius) {
+                            // Za da ne se nadminuvaat edno vrz drugo se vrtat okolu topkata
+                            const angle = Math.atan2(this.y - otherBall.y, this.x - otherBall.x);
+                            const offset = 2 * ballRadius - distance;
+
+                            this.x = newPosition.x + offset * Math.cos(angle);
+                            this.y = newPosition.y + offset * Math.sin(angle);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Function to shuffle an array
+        function shuffle(array) {
+            let currentIndex = array.length, temporaryValue, randomIndex;
+
+            // While there remain elements to shuffle...
+            while (currentIndex !== 0) {
+                // Pick a remaining element...
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex -= 1;
+
+                // And swap it with the current element.
+                temporaryValue = array[currentIndex];
+                array[currentIndex] = array[randomIndex];
+                array[randomIndex] = temporaryValue;
+            }
+
+            return array;
+        }
+    </script>
+</body>
+
+</html>
